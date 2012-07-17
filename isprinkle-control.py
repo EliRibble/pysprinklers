@@ -5,6 +5,7 @@ from Phidgets.Devices.InterfaceKit import *
 import datetime
 import time
 import sys
+import signal
 
 def attachHandler(args):
 	#print(dir(args))
@@ -55,6 +56,14 @@ def main():
 	interface_kit.openPhidget()
 	try:
 		interface_kit.waitForAttach(1000)
+
+		# Set up signal handlers for exiting
+		def shutdown(signum, frame):
+			all_off(interface_kit)
+			sys.exit(4)
+		for sig in (signal.SIGABRT, signal.SIGILL, signal.SIGINT, signal.SIGTERM):
+			signal.signal(sig, shutdown)
+
 		if sys.argv[1] == '--all-off':
 			all_off(interface_kit)
 			sys.exit(0)
