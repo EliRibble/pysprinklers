@@ -21,6 +21,11 @@ def all_off(interface_kit):
 		interface_kit.setOutputState(i, False)
 	print("All valves off")
 
+def all_on(interface_kit):
+	for i in range(interface_kit.getOutputCount()):
+		interface_kit.setOutputState(i, True)
+	print("All valves on")
+
 CURRENT_SCHEDULES = {
 	0: {
 		0: 45,
@@ -66,6 +71,9 @@ def main():
 
 		if sys.argv[1] == '--all-off':
 			all_off(interface_kit)
+			sys.exit(0)
+		if sys.argv[1] == '--all-on':
+			all_on(interface_kit)
 			sys.exit(0)
 		elif sys.argv[1] == '--run-zone':
 			if len(sys.argv) < 3:
