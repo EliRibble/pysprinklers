@@ -76,6 +76,17 @@ def get_status():
     ubw = _get_device()
     return _get_pin_states(ubw)
 
+def set_pin(port, pin, state):
+    ubw = _get_device()
+    assert port in ('A', 'B', 'C')
+    assert state in (True, False)
+    pin = _get_pin(pin)
+    LOGGER.debug("Set %s%s output to %s", port, pin, 1 if state else 0)
+    return _handle_command(ubw, 'PO,{port},{pin},{state}'.format(**{
+        'port'  : port,
+        'pin'   : pin,
+        'state' : 1 if state else 0}))
+
 def read_pin(ubw, port, pin):
     response = _handle_command(ubw, 'PI,B,0')
     match = read_pin.pattern.match(response)
@@ -91,16 +102,6 @@ def _get_pin(pin):
                 return config[pin]
         raise Exception('Unrecognized pin %s', pin)
     
-def set_pin(ubw, port, pin, value):
-    assert port in ('A', 'B', 'C')
-    assert value in (True, False)
-    pin = _get_pin(pin)
-    print("Set {0}{1} output to {2}".format(port, pin, 1 if value else 0))
-    return _handle_command(ubw, 'PO,{port},{pin},{value}'.format(**{
-        'port'  : port,
-        'pin'   : pin,
-        'value' : 1 if value else 0}))
-
 def _find_device():
     for tty in os.listdir('/dev'):
         if 'ACM' in tty:

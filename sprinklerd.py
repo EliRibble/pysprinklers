@@ -1,6 +1,9 @@
 import logging
+import re
+import functools
 import pyudev
 import pyudev.glib
+import glib
 import gobject
 import dbus
 import dbus.service
@@ -12,18 +15,20 @@ print(pyudev.__version__)
 
 LOGGER = logging.getLogger()
 
+class SprinklerException(Exception):
+    pass
 
 class SprinklersApi(dbus.service.Object):
     def __init__(self):
         self.name = 'org.theribbles.HomeAutomation'
         self.path = '/sprinklers'
+        self.timeouts = {}
         self.bus_name = dbus.service.BusName(self.name, bus=dbus.SystemBus())
         dbus.service.Object.__init__(self, self.bus_name, self.path)
 
     @dbus.service.method('org.theribbles.HomeAutomation', out_signature='s')
     def GetStatus(self):
         try:
-            LOGGER.debug("Got status request")
             states = ubw.get_status()
             return str(states)
         except Exception, e:
@@ -42,6 +47,64 @@ class SprinklersApi(dbus.service.Object):
             'description'   : sprinkler.description
         } for sprinkler in sprinklers])
 
+    def _get_sprinkler(self, sprinkler_id):
+        session = db.Session()
+        try:
+            i = int(sprinkler_id)
+            sprinkler = session.query(db.Sprinkler).filter_by(id=i).one()
+        except (ValueError, IndexError):
+            try:
+                sprinkler = session.query(db.Sprinkler).filter_by(name=sprinkler_id).one()
+            except IndexError:
+                raise SprinklerException("No sprinkler with id '%s'", sprinkler_id)
+
+        session.close()
+        return sprinkler
+        
+    @dbus.service.method('org.theribbles.HomeAutomation', in_signature='s')
+    def SetSprinklerOn(self, sprinkler_id):
+        sprinkler = self._get_sprinkler(sprinkler_id)
+        self._set_sprinkler_state(sprinkler, True)
+
+    @dbus.service.method('org.theribbles.HomeAutomation', in_signature='s')
+    def SetSprinklerOff(self, sprinkler_id):
+        sprinkler = self._get_sprinkler(sprinkler_id)
+        self._set_sprinkler_state(sprinkler, False)
+
+    def _go_off(self, sprinkler_id):
+        sprinkler = self._get_sprinkler(sprinkler_id)
+        LOGGER.debug("Setting %s off now", sprinkler_id)
+        glib.source_remove(self.timeouts[sprinkler_id])
+        del self.timeouts[sprinkler_id]
+        self._set_sprinkler_state(sprinkler, False)
+
+    def _set_sprinkler_state(self, sprinkler, state):
+        LOGGER.info("Set %s to %s", sprinkler, 'on' if state else 'off')
+        ubw.set_pin(sprinkler.port, sprinkler.pin, state)
+        db.create_state_change_record(sprinkler, state)
+        
+    @dbus.service.method('org.theribbles.HomeAutomation', in_signature='ss')
+    def SetSprinklerOnDuration(self, sprinkler_id, time):
+        seconds = _time_specifier_to_seconds(time)
+        sprinkler = self._get_sprinkler(sprinkler_id)
+        self._set_sprinkler_state(sprinkler, True)
+        LOGGER.info("Sprinkler will go off in %d seconds (%s)", seconds, time)
+        callback = functools.partial(self._go_off, sprinkler.id)
+        timeout_id = glib.timeout_add_seconds(time, callback)
+        self.timeouts[sprinkler.id] = timeout_id
+
+def _time_specifier_to_seconds(self, specifier):
+    match = _time_specifier_to_seconds.match(specifier)
+    if not match:
+        raise Exception("Bad time specifier: %s", specifier)
+    unit = match.group('unit')
+    if unit == 's':
+        return int(match.group('amount'))
+    elif unit == 'm':
+        return int(match.group('amount')) * 60
+    
+_time_specifier_to_seconds.pattern = re.compile('(?P<amount>\d+)(?P<unit>m|s)$')
+    
 def _setup_logging():
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
