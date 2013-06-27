@@ -79,7 +79,11 @@ def main():
     _setup_dbus()
 
     mainloop = gobject.MainLoop()
-    mainloop.run()
+    try:
+        mainloop.run()
+    except KeyboardInterrupt:
+        print('Exiting due to keyboard interrupt')
+        return
 
 if __name__ == '__main__':
     main()
