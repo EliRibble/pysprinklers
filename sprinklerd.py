@@ -6,10 +6,12 @@ import dbus
 import dbus.service
 import dbus.mainloop.glib
 import ubw
+import db
 
 print(pyudev.__version__)
 
 LOGGER = logging.getLogger()
+
 
 class SprinklersApi(dbus.service.Object):
     def __init__(self):
@@ -27,6 +29,18 @@ class SprinklersApi(dbus.service.Object):
         except Exception, e:
             LOGGER.exception("Failed to get status")
             return 'Failed'
+
+    @dbus.service.method('org.theribbles.HomeAutomation')
+    def GetSprinklers(self):
+        session = db.Session()
+        sprinklers = session.query(db.Sprinkler)
+        return str([{
+            'id'    : sprinkler.id,
+            'name'  : sprinkler.name,
+            'port'  : sprinkler.port,
+            'pin'   : sprinkler.pin,
+            'description'   : sprinkler.description
+        } for sprinkler in sprinklers])
 
 def _setup_logging():
     root = logging.getLogger()
