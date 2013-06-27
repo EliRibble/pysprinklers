@@ -11,50 +11,73 @@ import code
 import functools
 import pprint
 import argparse
+import logging
 
-def init_ubw(device):
-    ubw = serial.Serial(device)
+LOGGER = logging.getLogger('ubw')
 
-    if not ubw.isOpen():
-        raise Exception("Failed to open %s", device)
+class UBWException(Exception):
+    pass
 
-    # Reset the device just so we have a clean slate
-    handle_command(ubw, 'R')
-    return ubw
+class UBW(object):
+    def __init__(self, device_name, device):
+        self.device_name = device_name
+        self.device = device
 
-def handle_command(ubw, command):
-    print(command)
+    def __repr__(self):
+        return "UBW on {0}".format(self.device_name)
+
+def _get_device():
+    device_name = _find_device()
+    LOGGER.debug("Got device %s", device_name)
+    device = serial.Serial(device_name)
+    if not device.isOpen():
+        raise UBWException("Failed to open serial connection")
+    ubw = UBW(device_name, device)
+    _handle_commands(ubw, ['C,0,0,0,0'])
+    return UBW(device_name, device)
+    
+def _handle_commands(ubw, commands, retry=True):
+    LOGGER.debug("Handling commands '%s'", commands)
     attempts = 0
-    while attempts < 3:
-        try:
-            ubw.write(command + '\n')
-            response = ubw.readline()
-            response = response.replace('\r\n', '')
-            return response
-        except (IOError, serial.serialutil.SerialException), e:
-            traceback.print_exc()
-            attempts += 1
-            time.sleep(3)
+    try:
+        ubw.device.write('\n'.join(commands)+ '\n')
+        responses = [ubw.device.readline() for command in commands]
+        responses = [response.replace('\r\n', '') for response in responses]
+        return responses
+    except (IOError, serial.serialutil.SerialException), e:
+        LOGGER.warning('Serial exception detected, attempting to re-init ubw')
+        attempts += 1
+        time.sleep(3)
+        ubw = _get_device()
+        if not retry:
+            return _handle_commands(ubw, commands, retry=False)
     raise Exception("Failed to handle command to %s '%s' after 3 attempts", ubw, command)
     
+def _handle_command(ubw, command):
+    return _handle_commands(ubw, [command])[0]
+
 def _to_bit_array(val):
     val = int(val)
     return [bool(val & (1<<y)) for y in range(8)]
 
-def all_off(ubw):
-    return handle_command(ubw, 'O,0,0,0')
+def _all_off(ubw):
+    return _handle_command(ubw, 'O,0,0,0')
 
-def read_ports(ubw):
-    response = handle_command(ubw, 'I')
-    A, B, C = read_ports.pattern.match(response).groups()
+def _get_pin_states(ubw):
+    response = _handle_command(ubw, 'I')
+    A, B, C = _get_pin_states.pattern.match(response).groups()
     return {
         'A': _to_bit_array(A),
         'B': _to_bit_array(B),
         'C': _to_bit_array(C)}
-read_ports.pattern = re.compile('I,(?P<A>\d{3}),(?P<B>\d{3}),(?P<C>\d{3})')
+_get_pin_states.pattern = re.compile('I,(?P<A>\d{3}),(?P<B>\d{3}),(?P<C>\d{3})')
+
+def get_status():
+    ubw = _get_device()
+    return _get_pin_states(ubw)
 
 def read_pin(ubw, port, pin):
-    response = handle_command(ubw, 'PI,B,0')
+    response = _handle_command(ubw, 'PI,B,0')
     match = read_pin.pattern.match(response)
     return bool(int(match.group('value')))
 read_pin.pattern = re.compile('PI,(?P<value>[01])')
@@ -73,7 +96,7 @@ def set_pin(ubw, port, pin, value):
     assert value in (True, False)
     pin = _get_pin(pin)
     print("Set {0}{1} output to {2}".format(port, pin, 1 if value else 0))
-    return handle_command(ubw, 'PO,{port},{pin},{value}'.format(**{
+    return _handle_command(ubw, 'PO,{port},{pin},{value}'.format(**{
         'port'  : port,
         'pin'   : pin,
         'value' : 1 if value else 0}))
@@ -82,7 +105,7 @@ def _find_device():
     for tty in os.listdir('/dev'):
         if 'ACM' in tty:
             return '/dev/' + tty
-    return None
+    raise UBWException("Failed to find any devices like /dev/ACMx")
 
 def _is_finished(progress):
     for config in SCHEDULE.values():
@@ -135,7 +158,6 @@ SCHEDULE = {
         }
     }
 }
-
 def main():
     device = _find_device()
     if device is None:
@@ -145,8 +167,8 @@ def main():
 
     ubw = init_ubw(device)
 
-    print(handle_command(ubw, 'V'))
-    print("Set all port directions to output: {0}".format(handle_command(ubw, 'C,0,0,0,0')))
+    print(_handle_command(ubw, 'V'))
+    print("Set all port directions to output: {0}".format(_handle_command(ubw, 'C,0,0,0,0')))
     front = SCHEDULE['front']
     back = SCHEDULE['back']
     progress = {}
@@ -177,8 +199,8 @@ def main():
                 if device is None:
                     raise Exception("Cannot get a device anymore")
                 ubw = init_ubw(device)
-                print(handle_command(ubw, 'V'))
-                print("Set all port directions to output: {0}".format(handle_command(ubw, 'C,0,0,0,0')))
+                print(_handle_command(ubw, 'V'))
+                print("Set all port directions to output: {0}".format(_handle_command(ubw, 'C,0,0,0,0')))
                 all_off(ubw)
     finally:
         print('ALL OFF:{0}'.format(all_off(ubw)))
