@@ -1,5 +1,6 @@
 import sqlalchemy
 from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
 engine = sqlalchemy.create_engine('mysql+mysqldb://sprinklers_user:let_sprinklers_user_in@localhost/sprinklers')
@@ -15,3 +16,4 @@ class Sprinkler(Base):
     description = Column(String(500))
 
 Base.metadata.create_all(engine)
+Session = sessionmaker(bind=engine)
