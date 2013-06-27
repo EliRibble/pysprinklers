@@ -122,42 +122,6 @@ def _get_next(config, progress):
             return valve
     return None
 
-SETUP = {
-    'A': {
-        'backyard-south-grass': 1,
-        'backyard-west-grass': 2,
-        'backyard-east-grass': 3,
-    },
-    'B': {
-        'front-parking-strip': 0,
-        'front-east-grass': 1,
-        'front-center-grass': 2,
-        'front-center-and-west-grass': 3,
-        'front-flower-garden': 4,
-    }
-}
-
-DEFAULT_TIME = 40
-SCHEDULE = {
-    'front': {
-        'port': 'B',
-        'valves': {
-            'front-east-grass'              : DEFAULT_TIME,
-            'front-center-grass'            : DEFAULT_TIME,
-            #'front-center-and-west-grass'   : DEFAULT_TIME,
-            #'front-flower-garden'           : DEFAULT_TIME,
-            'front-parking-strip'           : DEFAULT_TIME,
-        }
-    },
-    'back': {
-        'port': 'A',
-        'valves': {
-            #'backyard-south-grass'          : DEFAULT_TIME,
-            #'backyard-west-grass'           : DEFAULT_TIME,
-            'backyard-east-grass'           : DEFAULT_TIME,
-        }
-    }
-}
 def main():
     device = _find_device()
     if device is None:
