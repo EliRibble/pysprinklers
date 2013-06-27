@@ -28,17 +28,17 @@ class SprinklersApi(dbus.service.Object):
 
     @dbus.service.method('org.theribbles.HomeAutomation', out_signature='s')
     def GetStatus(self):
-        try:
-            states = ubw.get_status()
-            return str(states)
-        except Exception, e:
-            LOGGER.exception("Failed to get status")
-            return 'Failed'
+        sprinklers = db.get_sprinklers()
+        states = ubw.get_status()
+        statuses = {}
+        for sprinkler in sprinklers:
+            statuses[sprinkler.name] = 'on' if states[sprinkler.port][sprinkler.pin] else 'off'
+        return str(statuses)
+                
 
     @dbus.service.method('org.theribbles.HomeAutomation')
     def GetSprinklers(self):
-        session = db.Session()
-        sprinklers = session.query(db.Sprinkler)
+        sprinklers = db.get_sprinklers()
         return str([{
             'id'    : sprinkler.id,
             'name'  : sprinkler.name,

@@ -7,6 +7,9 @@ from sqlalchemy.ext.declarative import declarative_base
 engine = sqlalchemy.create_engine('mysql+mysqldb://sprinklers_user:let_sprinklers_user_in@localhost/sprinklers')
 Base = declarative_base()
 
+class DBException(Exception):
+    pass
+
 class Sprinkler(Base):
     __tablename__ = 'sprinklers'
     
@@ -39,3 +42,23 @@ def create_state_change_record(sprinkler, state):
         sprinkler=sprinkler))
     session.commit()
     session.close()
+
+def get_sprinkler(sprinkler_id):
+    session = Session()
+    try:
+        i = int(sprinkler_id)
+        sprinkler = session.query(Sprinkler).filter_by(id=i).one()
+    except (ValueError, IndexError):
+        try:
+            sprinkler = session.query(Sprinkler).filter_by(name=sprinkler_id).one()
+        except IndexError:
+            raise DBException("No sprinkler with id '%s'", sprinkler_id)
+
+    session.close()
+    return sprinkler
+
+def get_sprinklers():
+    session = Session()
+    sprinklers = session.query(Sprinkler).order_by(Sprinkler.id).all()
+    session.close()
+    return sprinklers
