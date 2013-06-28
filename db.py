@@ -31,6 +31,25 @@ class SprinklerStateChange(Base):
     sprinkler_id    = Column(Integer, ForeignKey('sprinklers.id'))
     sprinkler       = relationship('Sprinkler', backref=backref('events', order_by=at))
 
+class Schedule(Base):
+    __tablename__ = 'schedule'
+    
+    id          = Column(Integer, primary_key=True)
+    name        = Column(String(100))
+    
+class ScheduleEntry(Base):
+    __tablename__ = 'schedule_entry'
+
+    id              = Column(Integer, primary_key=True)
+    index           = Column(Integer)
+    group           = Column(Integer)
+
+    schedule_id     = Column(Integer, ForeignKey('schedule.id'))
+    schedule        = relationship('Schedule', backref=backref('entries', order_by=index))
+
+    sprinkler_id    = Column(Integer, ForeignKey('sprinklers.id'))
+    sprinkler       = relationship('Sprinkler', backref=backref('schedule_entries', order_by=id))
+
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
