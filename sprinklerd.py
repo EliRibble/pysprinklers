@@ -10,8 +10,7 @@ import dbus.service
 import dbus.mainloop.glib
 import ubw
 import db
-
-print(pyudev.__version__)
+import sys
 
 LOGGER = logging.getLogger()
 
@@ -108,10 +107,11 @@ _time_specifier_to_seconds.pattern = re.compile('(?P<amount>\d+)(?P<unit>m|s)$')
 def _setup_logging():
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
-    stream_handler = logging.StreamHandler()
+    stream_handler = logging.StreamHandler(sys.stdout)
     stream_formatter = logging.Formatter('[%(levelname)-8s] %(asctime)s %(name)s: %(message)s')
     stream_handler.setFormatter(stream_formatter)
     root.addHandler(stream_handler)
+
 
 def _device_added_callback(observer, device, *args, **kwargs):
     LOGGER.info("Got device added callback with args: %s", args)
@@ -150,6 +150,8 @@ def _setup_dbus():
 
 def main():
     _setup_logging()
+
+    logging.info("Starting sprinklerd")
 
     _link_udev()
 
