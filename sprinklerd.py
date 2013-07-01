@@ -68,7 +68,7 @@ class SprinklersApi(dbus.service.Object):
     def _go_off(self, sprinkler_id):
         session = db.Session()
         sprinkler = db.get_sprinkler(session, sprinkler_id)
-        LOGGER.debug("Setting %s off now", sprinkler_id)
+        LOGGER.debug("Setting %s off now", sprinkler)
         glib.source_remove(self.timeouts[sprinkler_id])
         del self.timeouts[sprinkler_id]
         self._set_sprinkler_state(session, sprinkler, False)
@@ -94,7 +94,7 @@ class SprinklersApi(dbus.service.Object):
         seconds = _time_specifier_to_seconds(time)
         sprinkler = db.get_sprinkler(session, sprinkler_id)
         self._set_sprinkler_state(session, sprinkler, True)
-        LOGGER.info("Sprinkler will go off in %d seconds (%s)", seconds, time)
+        LOGGER.info("%s will go off in %d seconds (%s)", sprinkler, seconds, time)
         callback = functools.partial(self._go_off, sprinkler.id)
         timeout_id = glib.timeout_add_seconds(seconds, callback)
         self.timeouts[sprinkler.id] = timeout_id
