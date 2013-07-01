@@ -1,5 +1,7 @@
+import sys
 import logging
 import re
+import time
 import functools
 import pyudev
 import pyudev.glib
@@ -10,7 +12,7 @@ import dbus.service
 import dbus.mainloop.glib
 import ubw
 import db
-import sys
+import boto.ses
 
 LOGGER = logging.getLogger()
 
@@ -71,10 +73,20 @@ class SprinklersApi(dbus.service.Object):
         del self.timeouts[sprinkler_id]
         self._set_sprinkler_state(session, sprinkler, False)
 
-    def _set_sprinkler_state(self, sprinkler, state):
-        LOGGER.info("Set %s to %s", sprinkler, 'on' if state else 'off')
-        ubw.set_pin(sprinkler.port, sprinkler.pin, state)
-        db.create_state_change_record(sprinkler, state)
+    def _set_sprinkler_state(self, session, sprinkler, state):
+        direction = 'on' if state else 'off'
+        LOGGER.info("Set %s to %s", sprinkler, direction)
+        attempts = 0
+        while True:
+            try:
+                ubw.set_pin(sprinkler.port, sprinkler.pin, state)
+                db.create_state_change_record(session, sprinkler, state)
+            except ubw.UBWUnavailable, e:
+                LOGGER.warning("Failed to attach to a UBW. Waiting 3 seconds to try again")
+                time.sleep(3)
+                attempts += 1
+                if attempts > 20:
+                    _send_failure_email(sprinkler, attempts, direction)
         
     @dbus.service.method('org.theribbles.HomeAutomation', in_signature='ss')
     def SetSprinklerOnDuration(self, sprinkler_id, time):
@@ -115,6 +127,13 @@ def _setup_logging():
     stream_handler.setFormatter(stream_formatter)
     root.addHandler(stream_handler)
 
+def _send_failure_email(sprinkler, attempts, direction):
+    ses = boto.ses.connection.SESConnection()
+    ses.send_email(
+        source          = 'automation@theribbles.org',
+        subject         = 'Failed to turn sprinkler {0} {1}'.format(sprinkler.name, direction),
+        body            = 'Sorry, I could not manage to control sprinkler {0} after {1} attempts. I was trying to turn it {2}'.format(sprinkler, attempts, direction),
+        to_addresses    = 'junk@theribbles.org')
 
 def _device_added_callback(observer, device, *args, **kwargs):
     LOGGER.info("Got device added callback with args: %s", args)

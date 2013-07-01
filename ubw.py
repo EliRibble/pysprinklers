@@ -18,6 +18,9 @@ LOGGER = logging.getLogger('ubw')
 class UBWException(Exception):
     pass
 
+class UBWUnavailable(UBWException):
+    pass
+
 class UBW(object):
     def __init__(self, device_name, device):
         self.device_name = device_name
