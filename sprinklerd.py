@@ -142,6 +142,8 @@ def _send_failure_email(sprinkler, attempts, direction):
 
 def _device_added_callback(observer, device):
     LOGGER.debug("Added device: {0}".format(device.device_path))
+    if 'ACM' in device.device_path:
+        ubw.init()
 
 def _device_changed_callback(observer, device):
     LOGGER.debug("Changed device: {0}".format(device.device_path))

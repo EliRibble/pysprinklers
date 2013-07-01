@@ -42,7 +42,6 @@ def _get_device():
     if not device.isOpen():
         raise UBWException("Failed to open serial connection")
     ubw = UBW(device_name, device)
-    _handle_commands(ubw, ['C,0,0,0,0'])
     return UBW(device_name, device)
     
 def _handle_commands(ubw, commands, retry=True):
@@ -111,3 +110,7 @@ def set_pin(port, pin, state):
         'pin'   : pin,
         'state' : 1 if state else 0}))
 
+def init():
+    ubw = _get_device()
+    result = _handle_command(ubw, 'C,0,0,0,0')
+    LOGGER.info("Initializing ubw device at %s: %s", ubw.device_name, result)
