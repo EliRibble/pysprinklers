@@ -6,6 +6,9 @@ system_bus = dbus.SystemBus()
 proxy = system_bus.get_object('org.theribbles.HomeAutomation', '/sprinklers')
 iface = dbus.Interface(proxy, 'org.theribbles.HomeAutomation')
 
+if len(sys.argv) < 2:
+    print("Commands: status, sprinklers, on, off, onfor")
+    sys.exit(1)
 command = sys.argv[1]
 if command == 'status':
     print(iface.GetStatus())
