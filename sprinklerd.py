@@ -74,20 +74,24 @@ class SprinklersApi(dbus.service.Object):
         self._set_sprinkler_state(session, sprinkler, False)
 
     def _set_sprinkler_state(self, session, sprinkler, state):
+        attempts = 0
         direction = 'on' if state else 'off'
         LOGGER.info("Set %s to %s", sprinkler, direction)
-        attempts = 0
-        while True:
-            try:
-                ubw.set_pin(sprinkler.port, sprinkler.pin, state)
-                db.create_state_change_record(session, sprinkler, state)
-                return
-            except ubw.UBWUnavailable, e:
-                LOGGER.warning("Failed to attach to a UBW. Waiting 3 seconds to try again")
-                time.sleep(3)
-                attempts += 1
-                if attempts > 20:
-                    _send_failure_email(sprinkler, attempts, direction)
+        try:
+            while True:
+                try:
+                    ubw.set_pin(sprinkler.port, sprinkler.pin, state)
+                    db.create_state_change_record(session, sprinkler, state)
+                    return
+                except ubw.UBWUnavailable, e:
+                    LOGGER.warning("Failed to attach to a UBW. Waiting 3 seconds to try again")
+                    time.sleep(3)
+                    attempts += 1
+                    if attempts > 20:
+                        _send_failure_email(sprinkler, attempts, direction)
+        except Exception:
+            _send_failure_email(sprinkler, attempts, direction)
+            
         
     @dbus.service.method('org.theribbles.HomeAutomation', in_signature='ss')
     def SetSprinklerOnDuration(self, sprinkler_id, time):
