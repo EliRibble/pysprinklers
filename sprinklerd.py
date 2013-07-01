@@ -81,6 +81,7 @@ class SprinklersApi(dbus.service.Object):
             try:
                 ubw.set_pin(sprinkler.port, sprinkler.pin, state)
                 db.create_state_change_record(session, sprinkler, state)
+                return
             except ubw.UBWUnavailable, e:
                 LOGGER.warning("Failed to attach to a UBW. Waiting 3 seconds to try again")
                 time.sleep(3)
