@@ -33,7 +33,7 @@ def _find_device():
     for tty in os.listdir('/dev'):
         if 'ACM' in tty:
             return '/dev/' + tty
-    raise UBWException("Failed to find any devices like /dev/ACMx")
+    raise UBWUnavailable("Failed to find any devices like /dev/ACMx")
 
 def _get_device():
     device_name = _find_device()
