@@ -96,7 +96,7 @@ class SprinklersApi(dbus.service.Object):
         self._set_sprinkler_state(session, sprinkler, True)
         LOGGER.info("Sprinkler will go off in %d seconds (%s)", seconds, time)
         callback = functools.partial(self._go_off, sprinkler.id)
-        timeout_id = glib.timeout_add_seconds(time, callback)
+        timeout_id = glib.timeout_add_seconds(seconds, callback)
         self.timeouts[sprinkler.id] = timeout_id
 
     @dbus.service.method('org.theribbles.HomeAutomation')
