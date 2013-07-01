@@ -53,17 +53,14 @@ class ScheduleEntry(Base):
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
-def create_state_change_record(sprinkler, state):
-    session = Session()
+def create_state_change_record(session, sprinkler, state):
     session.add(SprinklerStateChange(
         state=state,
         at=datetime.datetime.utcnow(),
         sprinkler=sprinkler))
     session.commit()
-    session.close()
 
-def get_sprinkler(sprinkler_id):
-    session = Session()
+def get_sprinkler(session, sprinkler_id):
     try:
         i = int(sprinkler_id)
         sprinkler = session.query(Sprinkler).filter_by(id=i).one()
@@ -73,11 +70,8 @@ def get_sprinkler(sprinkler_id):
         except IndexError:
             raise DBException("No sprinkler with id '%s'", sprinkler_id)
 
-    session.close()
     return sprinkler
 
-def get_sprinklers():
-    session = Session()
+def get_sprinklers(session):
     sprinklers = session.query(Sprinkler).order_by(Sprinkler.id).all()
-    session.close()
     return sprinklers

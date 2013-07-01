@@ -27,17 +27,20 @@ class SprinklersApi(dbus.service.Object):
 
     @dbus.service.method('org.theribbles.HomeAutomation', out_signature='s')
     def GetStatus(self):
-        sprinklers = db.get_sprinklers()
+        session = db.Session()
+        sprinklers = db.get_sprinklers(session)
         states = ubw.get_status()
         statuses = {}
         for sprinkler in sprinklers:
             statuses[sprinkler.name] = 'on' if states[sprinkler.port][sprinkler.pin] else 'off'
+        session.close()
         return str(statuses)
                 
 
     @dbus.service.method('org.theribbles.HomeAutomation')
     def GetSprinklers(self):
-        sprinklers = db.get_sprinklers()
+        session = db.Session()
+        sprinklers = db.get_sprinklers(session)
         return str([{
             'id'    : sprinkler.id,
             'name'  : sprinkler.name,
@@ -46,36 +49,27 @@ class SprinklersApi(dbus.service.Object):
             'description'   : sprinkler.description
         } for sprinkler in sprinklers])
 
-    def _get_sprinkler(self, sprinkler_id):
-        session = db.Session()
-        try:
-            i = int(sprinkler_id)
-            sprinkler = session.query(db.Sprinkler).filter_by(id=i).one()
-        except (ValueError, IndexError):
-            try:
-                sprinkler = session.query(db.Sprinkler).filter_by(name=sprinkler_id).one()
-            except IndexError:
-                raise SprinklerException("No sprinkler with id '%s'", sprinkler_id)
-
-        session.close()
-        return sprinkler
-        
     @dbus.service.method('org.theribbles.HomeAutomation', in_signature='s')
     def SetSprinklerOn(self, sprinkler_id):
-        sprinkler = self._get_sprinkler(sprinkler_id)
-        self._set_sprinkler_state(sprinkler, True)
+        session = db.Session()
+        sprinkler = db.get_sprinkler(session, sprinkler_id)
+        self._set_sprinkler_state(session, sprinkler, True)
+        session.close()
 
     @dbus.service.method('org.theribbles.HomeAutomation', in_signature='s')
     def SetSprinklerOff(self, sprinkler_id):
-        sprinkler = self._get_sprinkler(sprinkler_id)
-        self._set_sprinkler_state(sprinkler, False)
+        session = db.Session()
+        sprinkler = db.get_sprinkler(session, sprinkler_id)
+        self._set_sprinkler_state(session, sprinkler, False)
+        session.close()
 
     def _go_off(self, sprinkler_id):
-        sprinkler = self._get_sprinkler(sprinkler_id)
+        session = db.Session()
+        sprinkler = db.get_sprinkler(session, sprinkler_id)
         LOGGER.debug("Setting %s off now", sprinkler_id)
         glib.source_remove(self.timeouts[sprinkler_id])
         del self.timeouts[sprinkler_id]
-        self._set_sprinkler_state(sprinkler, False)
+        self._set_sprinkler_state(session, sprinkler, False)
 
     def _set_sprinkler_state(self, sprinkler, state):
         LOGGER.info("Set %s to %s", sprinkler, 'on' if state else 'off')
@@ -84,16 +78,25 @@ class SprinklersApi(dbus.service.Object):
         
     @dbus.service.method('org.theribbles.HomeAutomation', in_signature='ss')
     def SetSprinklerOnDuration(self, sprinkler_id, time):
+        session = db.Session()
         seconds = _time_specifier_to_seconds(time)
-        sprinkler = self._get_sprinkler(sprinkler_id)
-        self._set_sprinkler_state(sprinkler, True)
+        sprinkler = db.get_sprinkler(session, sprinkler_id)
+        self._set_sprinkler_state(session, sprinkler, True)
         LOGGER.info("Sprinkler will go off in %d seconds (%s)", seconds, time)
         callback = functools.partial(self._go_off, sprinkler.id)
         timeout_id = glib.timeout_add_seconds(time, callback)
         self.timeouts[sprinkler.id] = timeout_id
 
-def _time_specifier_to_seconds(self, specifier):
-    match = _time_specifier_to_seconds.match(specifier)
+    @dbus.service.method('org.theribbles.HomeAutomation')
+    def TestFailureEmail(self):
+        class FakeSprinkler(object):
+            def __init__(self, name):
+                self.name = name
+        _send_failure_email(FakeSprinkler('fake'), 1, 'on')
+        LOGGER.info("Test failure email sent")
+
+def _time_specifier_to_seconds(specifier):
+    match = _time_specifier_to_seconds.pattern.match(specifier)
     if not match:
         raise Exception("Bad time specifier: %s", specifier)
     unit = match.group('unit')
