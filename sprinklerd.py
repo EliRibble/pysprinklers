@@ -135,25 +135,17 @@ def _send_failure_email(sprinkler, attempts, direction):
         body            = 'Sorry, I could not manage to control sprinkler {0} after {1} attempts. I was trying to turn it {2}'.format(sprinkler, attempts, direction),
         to_addresses    = 'junk@theribbles.org')
 
-def _device_added_callback(observer, device, *args, **kwargs):
-    LOGGER.info("Got device added callback with args: %s", args)
-    LOGGER.info("Got device added callback with kwargs: %s", kwargs)
-    LOGGER.debug("Device: {0}".format(device))
+def _device_added_callback(observer, device):
+    LOGGER.debug("Added device: {0}".format(device.device_path))
 
-def _device_changed_callback(observer, device, *args, **kwargs):
-    LOGGER.info("Got device changed callback with args: %s", args)
-    LOGGER.info("Got device changed callback with args: %s", kwargs)
-    LOGGER.debug("Device: {0}".format(device))
+def _device_changed_callback(observer, device):
+    LOGGER.debug("Changed device: {0}".format(device.device_path))
    
-def _device_removed_callback(observer, device, *args, **kwargs):
-    LOGGER.info("Got device removed callback with args: %s", args)
-    LOGGER.info("Got device removed callback with args: %s", kwargs)
-    LOGGER.debug("Device: {0}".format(device))
+def _device_removed_callback(observer, device):
+    LOGGER.debug("Removed device: {0}".format(device.device_path))
 
-def _device_moved_callback(observer, device, *args, **kwargs):
-    LOGGER.info("Got device moved callback with args: %s", args)
-    LOGGER.info("Got device moved callback with args: %s", kwargs)
-    LOGGER.debug("Device: {0}".format(device))
+def _device_moved_callback(observer, device):
+    LOGGER.debug("Moved device: {0}".format(device.device_path))
 
 def _link_udev():
     context = pyudev.Context()
