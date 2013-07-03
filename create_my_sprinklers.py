@@ -2,6 +2,7 @@ import db
 
 session = db.Session()
 
+backyard_pots           = db.Sprinkler(name='backyard-pots',                  port='A', pin=0, description='Lines for all the pots on the deck')
 backyard_south_grass    = db.Sprinkler(name='backyard-south-grass',           port='A', pin=1, description='Along the fence in the backyard, shoot towards deck')
 backyard_west_grass     = db.Sprinkler(name='backyard-west-grass',            port='A', pin=2, description='Along the west fence')
 backyard_east_grass     = db.Sprinkler(name='backyard-east-grass',            port='A', pin=3, description='Nnear backyard kitchen and firepit')
