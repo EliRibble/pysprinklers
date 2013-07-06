@@ -43,13 +43,15 @@ class SprinklersApi(dbus.service.Object):
     def GetSprinklers(self):
         session = db.Session()
         sprinklers = db.get_sprinklers(session)
-        return str([{
+        data = str([{
             'id'    : sprinkler.id,
             'name'  : sprinkler.name,
             'port'  : sprinkler.port,
             'pin'   : sprinkler.pin,
             'description'   : sprinkler.description
         } for sprinkler in sprinklers])
+        session.close()
+        return data
 
     @dbus.service.method('org.theribbles.HomeAutomation', in_signature='s')
     def SetSprinklerOn(self, sprinkler_id):
@@ -72,6 +74,7 @@ class SprinklersApi(dbus.service.Object):
         glib.source_remove(self.timeouts[sprinkler_id])
         del self.timeouts[sprinkler_id]
         self._set_sprinkler_state(session, sprinkler, False)
+        session.close()
 
     def _set_sprinkler_state(self, session, sprinkler, state):
         attempts = 0
@@ -103,6 +106,7 @@ class SprinklersApi(dbus.service.Object):
         callback = functools.partial(self._go_off, sprinkler.id)
         timeout_id = glib.timeout_add_seconds(seconds, callback)
         self.timeouts[sprinkler.id] = timeout_id
+        session.close()
 
     @dbus.service.method('org.theribbles.HomeAutomation')
     def TestFailureEmail(self):
