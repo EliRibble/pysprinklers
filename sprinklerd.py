@@ -34,7 +34,11 @@ class SprinklersApi(dbus.service.Object):
         states = ubw.get_status()
         statuses = {}
         for sprinkler in sprinklers:
-            statuses[sprinkler.name] = 'on' if states[sprinkler.port][sprinkler.pin] else 'off'
+            status = {
+                'state'     : 'on' if states[sprinkler.port][sprinkler.pin] else 'off',
+                'last_ran'  : db.get_last_ran(session, sprinkler.id)
+            }
+            statuses[sprinkler.name] = status
         session.close()
         return str(statuses)
                 

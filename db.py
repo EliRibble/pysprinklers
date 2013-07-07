@@ -75,3 +75,24 @@ def get_sprinkler(session, sprinkler_id):
 def get_sprinklers(session):
     sprinklers = session.query(Sprinkler).order_by(Sprinkler.id).all()
     return sprinklers
+
+class SprinklerRun(object):
+    def __init__(self, on, off):
+        self.on = on.at
+        self.off = off.at
+
+    def __repr__(self):
+        return "Run at {0} for {1}".format(self.at, self.duration)
+
+    @property
+    def duration(self):
+        return self.off - self.on
+
+    @property
+    def at(self):
+        return self.on
+
+def get_last_ran(session, sprinkler_id):
+    last_on = session.query(SprinklerStateChange).order_by(sqlalchemy.desc(SprinklerStateChange.at)).filter_by(sprinkler_id=sprinkler_id, state=True).first()
+    last_off = session.query(SprinklerStateChange).order_by(sqlalchemy.desc(SprinklerStateChange.at)).filter_by(sprinkler_id=sprinkler_id, state=False).first()
+    return SprinklerRun(last_on, last_off)
