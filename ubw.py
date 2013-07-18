@@ -38,9 +38,13 @@ def _find_device():
 def _get_device():
     device_name = _find_device()
     LOGGER.debug("Got device %s", device_name)
-    device = serial.Serial(device_name)
-    if not device.isOpen():
-        raise UBWException("Failed to open serial connection")
+    try:
+        device = serial.Serial(device_name)
+        if not device.isOpen():
+            raise UBWUnavailable("Failed to open serial connection")
+    except (IOError, serial.SerialException), e:
+        LOGGER.exception('Serial exception when trying to bind %s:', device_name)
+        raise UBWUnavailable("Failed to open serial connection")
     ubw = UBW(device_name, device)
     return UBW(device_name, device)
     
