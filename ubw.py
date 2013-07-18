@@ -63,7 +63,7 @@ def _handle_commands(ubw, commands, retry=True):
         ubw = _get_device()
         if not retry:
             return _handle_commands(ubw, commands, retry=False)
-    raise Exception("Failed to handle command to %s '%s' after 3 attempts", ubw, command)
+    raise UBWException("Failed to handle command to %s '%s' after 3 attempts", ubw, command)
     
 def _handle_command(ubw, command):
     return _handle_commands(ubw, [command])[0]
