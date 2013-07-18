@@ -96,7 +96,8 @@ class SprinklersApi(dbus.service.Object):
                     attempts += 1
                     if attempts > 20:
                         _send_failure_email(sprinkler, attempts, direction)
-        except Exception:
+        except Exception, e:
+            logging.exception("Major failure while trying to control %s and turn it %s: %s", sprinkler, direction, e)
             _send_failure_email(sprinkler, attempts, direction)
             
         
