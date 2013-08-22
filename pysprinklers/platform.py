@@ -30,8 +30,8 @@ def get_sprinklers():
 def _get_last_ran(session, sprinkler_id):
     last = db.get_last_ran(session, sprinkler_id)
     return {
-        'at'        : last.at,
-        'duration'  : last.duration,
+        'at'        : last.at.strftime('%Y-%m-%d %H:%M:%S'),
+        'duration'  : last.duration.seconds,
     }
 
 def get_status():
