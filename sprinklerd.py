@@ -5,6 +5,7 @@ import pyudev
 import pyudev.glib
 import sys
 import ubw
+import web_server
 
 LOGGER = logging.getLogger()
 
@@ -87,6 +88,7 @@ def main():
 
     elif config['server-type'] == 'web':
         LOGGER.info("Enabling Web server")
+        web_server.run(config)
 
 if __name__ == '__main__':
     main()
