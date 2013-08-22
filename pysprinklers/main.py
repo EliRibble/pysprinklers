@@ -89,6 +89,3 @@ def main():
     elif config['server-type'] == 'web':
         LOGGER.info("Enabling Web server")
         web_server.run(config)
-
-if __name__ == '__main__':
-    main()
