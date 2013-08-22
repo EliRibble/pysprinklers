@@ -13,6 +13,7 @@ import dbus.mainloop.glib
 import ubw
 import db
 import boto.ses
+import argparse
 
 LOGGER = logging.getLogger()
 
@@ -178,21 +179,56 @@ def _setup_dbus():
     dbus_server = SprinklersApi()
     dbus.set_default_main_loop(dbus_loop)
 
+CONFIG_OPTIONS = {
+    'server-type'   : 'web',
+}
+
+def _create_config(args):
+    configuration = CONFIG_OPTIONS.copy()
+    if args.config is not None:
+        import ConfigParser
+        config_file = ConfigParser.SafeConfigParser()
+        config_file.read(args.config)
+        for prop, default in CONFIG_OPTIONS.items():
+            try:
+                configuration[prop] = config_file.get('pysprinklers', prop)
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError), e:
+                configuration[prop] = default
+
+    for key in CONFIG_OPTIONS.keys():
+        arg_key = key.replace('-', '_')
+        value = getattr(args, arg_key, None)
+        if value is not None:
+            configuration[key] = value
+
+    return configuration
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', help="The config file to use for settings")
+    for config in CONFIG_OPTIONS.keys():
+        parser.add_argument('--' + config)
+    args = parser.parse_args()
+
+    config = _create_config(args)
     _setup_logging()
 
     logging.info("Starting sprinklerd")
 
     _link_udev()
 
-    _setup_dbus()
+    if config['server-type'] == 'dbus':
+        LOGGER.info("Enabling DBUS server")
+        _setup_dbus()
 
-    mainloop = gobject.MainLoop()
-    try:
-        mainloop.run()
-    except KeyboardInterrupt:
-        print('Exiting due to keyboard interrupt')
-        return
+        mainloop = gobject.MainLoop()
+        try:
+            mainloop.run()
+        except KeyboardInterrupt:
+            print('Exiting due to keyboard interrupt')
+
+    elif config['server-type'] == 'web':
+        LOGGER.info("Enabling Web server")
 
 if __name__ == '__main__':
     main()
