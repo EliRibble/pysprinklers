@@ -96,3 +96,18 @@ def get_last_ran(session, sprinkler_id):
     last_on = session.query(SprinklerStateChange).order_by(sqlalchemy.desc(SprinklerStateChange.at)).filter_by(sprinkler_id=sprinkler_id, state=True).first()
     last_off = session.query(SprinklerStateChange).order_by(sqlalchemy.desc(SprinklerStateChange.at)).filter_by(sprinkler_id=sprinkler_id, state=False).first()
     return SprinklerRun(last_on, last_off)
+
+def get_runs(session, sprinkler_id, count=10):
+    runs = []
+    on = None
+    off = None
+    for state_change in session.query(SprinklerStateChange).order_by(sqlalchemy.desc(SprinklerStateChange.at)).filter_by(sprinkler_id=sprinkler_id)[:count*2]:
+        if state_change.state:
+            on = state_change
+        else:
+            off = state_change
+        if on is not None and off is not None:
+            runs.append(SprinklerRun(on, off))
+            on = None
+            off = None
+    return runs
