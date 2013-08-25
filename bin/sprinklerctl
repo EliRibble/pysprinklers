@@ -20,10 +20,13 @@ elif command == 'history':
     pprint.pprint(json.loads(iface.GetHistory(sys.argv[2])))
 elif command == 'on':
     iface.SetSprinklerOn(sys.argv[2])
+    print("{0} turned on".format(sys.argv[2]))
 elif command == 'off':
     iface.SetSprinklerOff(sys.argv[2])
+    print("{0} turned off".format(sys.argv[2]))
 elif command == 'onfor':
     iface.SetSprinklerOnDuration(sys.argv[2], sys.argv[3])
+    print("{0} turned on for {1}".format(sys.argv[2], sys.argv[3]))
 elif command == 'testemail':
     iface.TestFailureEmail()
 else:
