@@ -48,6 +48,15 @@ def get_status():
     session.close()
     return statuses
 
+def get_history(sprinkler_id):
+    session = db.Session()
+    sprinkler = db.get_sprinkler(session, sprinkler_id)
+    runs = db.get_runs(session, sprinkler.id)
+    return [{
+        'at'        : run.at.strftime(DATETIME_PATTERN),
+        'duration'  : "{0} minutes".format(run.duration // 60),
+    } for run in runs]
+    
 def set_sprinkler_state(sprinkler_id, on):
     session = db.Session()
     sprinkler = db.get_sprinkler(session, sprinkler_id)

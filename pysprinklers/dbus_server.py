@@ -32,6 +32,11 @@ class SprinklersApi(dbus.service.Object):
         sprinklers = platform.get_sprinklers()
         return json.dumps(sprinklers, sort_keys=True)
 
+    @dbus.service.method('org.theribbles.HomeAutomation', in_signature='s', out_signature='s')
+    def GetHistory(sel, sprinkler_id):
+        history = platform.get_history(sprinkler_id)
+        return json.dumps(history, sort_keys=True)
+
     @dbus.service.method('org.theribbles.HomeAutomation', in_signature='s')
     def SetSprinklerOn(self, sprinkler_id):
         platform.set_sprinkler_state(sprinkler_id, True)
