@@ -15,7 +15,9 @@ command = sys.argv[1]
 if command == 'status':
     pprint.pprint(json.loads(iface.GetStatus()))
 elif command == 'sprinklers':
-    print(iface.GetSprinklers())
+    pprint.pprint(json.loads(iface.GetSprinklers()))
+elif command == 'history':
+    pprint.pprint(json.loads(iface.GetHistory(sys.argv[2])))
 elif command == 'on':
     iface.SetSprinklerOn(sys.argv[2])
 elif command == 'off':

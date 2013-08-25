@@ -9,6 +9,7 @@ import glib
 
 LOGGER = logging.getLogger('platform')
 
+DATETIME_PATTERN = '%Y-%m-%d %H:%M:%S'
 configuration = None
 def configure(config):
     global configuration
@@ -30,7 +31,7 @@ def get_sprinklers():
 def _get_last_ran(session, sprinkler_id):
     last = db.get_last_ran(session, sprinkler_id)
     return {
-        'at'        : last.at.strftime('%Y-%m-%d %H:%M:%S'),
+        'at'        : last.at.strftime(DATETIME_PATTERN),
         'duration'  : last.duration.seconds,
     }
 
