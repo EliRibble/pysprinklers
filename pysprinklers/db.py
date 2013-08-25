@@ -3,6 +3,7 @@ import sqlalchemy
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
+from contextlib import contextmanager
 
 engine = sqlalchemy.create_engine('mysql+mysqldb://sprinklers_user:let_sprinklers_user_in@localhost/sprinklers')
 Base = declarative_base()
@@ -53,12 +54,24 @@ class ScheduleEntry(Base):
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
+@contextmanager
+def session_scope():
+    """Provide a transactional scope around a series of operations."""
+    session = Session()
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
 def create_state_change_record(session, sprinkler, state):
     session.add(SprinklerStateChange(
         state=state,
         at=datetime.datetime.utcnow(),
         sprinkler=sprinkler))
-    session.commit()
 
 def get_sprinkler(session, sprinkler_id):
     try:

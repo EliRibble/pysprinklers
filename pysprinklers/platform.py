@@ -16,16 +16,15 @@ def configure(config):
     configuration = config
 
 def get_sprinklers():
-    session = db.Session()
-    sprinklers = db.get_sprinklers(session)
-    data = [{
-        'id'    : sprinkler.id,
-        'name'  : sprinkler.name,
-        'port'  : sprinkler.port,
-        'pin'   : sprinkler.pin,
-        'description'   : sprinkler.description
-    } for sprinkler in sprinklers]
-    session.close()
+    with db.session_scope() as session:
+        sprinklers = db.get_sprinklers(session)
+        data = [{
+            'id'    : sprinkler.id,
+            'name'  : sprinkler.name,
+            'port'  : sprinkler.port,
+            'pin'   : sprinkler.pin,
+            'description'   : sprinkler.description
+        } for sprinkler in sprinklers]
     return data
 
 def _get_last_ran(session, sprinkler_id):
@@ -36,33 +35,31 @@ def _get_last_ran(session, sprinkler_id):
     }
 
 def get_status():
-    session = db.Session()
-    sprinklers = db.get_sprinklers(session)
-    states = ubw.get_status()
-    statuses = {}
-    for sprinkler in sprinklers:
-        status = {
-            'state'     : 'on' if states[sprinkler.port][sprinkler.pin] else 'off',
-            'last_ran'  : _get_last_ran(session, sprinkler.id)
-        }
-        statuses[sprinkler.name] = status
-    session.close()
+    with db.session_scope() as session:
+        sprinklers = db.get_sprinklers(session)
+        states = ubw.get_status()
+        statuses = {}
+        for sprinkler in sprinklers:
+            status = {
+                'state'     : 'on' if states[sprinkler.port][sprinkler.pin] else 'off',
+                'last_ran'  : _get_last_ran(session, sprinkler.id)
+            }
+            statuses[sprinkler.name] = status
     return statuses
 
 def get_history(sprinkler_id):
-    session = db.Session()
-    sprinkler = db.get_sprinkler(session, sprinkler_id)
-    runs = db.get_runs(session, sprinkler.id)
-    return [{
-        'at'        : run.at.strftime(DATETIME_PATTERN),
-        'duration'  : "{0} minutes".format(run.duration // 60),
-    } for run in runs]
+    with db.session_scope() as session:
+        sprinkler = db.get_sprinkler(session, sprinkler_id)
+        runs = db.get_runs(session, sprinkler.id)
+        return [{
+            'at'        : run.at.strftime(DATETIME_PATTERN),
+            'duration'  : "{0} minutes".format(run.duration // 60),
+        } for run in runs]
     
 def set_sprinkler_state(sprinkler_id, on):
-    session = db.Session()
-    sprinkler = db.get_sprinkler(session, sprinkler_id)
-    _set_sprinkler_state(session, sprinkler, on)
-    session.close()
+    with db.session_scope() as session:
+        sprinkler = db.get_sprinkler(session, sprinkler_id)
+        _set_sprinkler_state(session, sprinkler, on)
 
 def _set_sprinkler_state(session, sprinkler, state):
     attempts = 0
@@ -101,20 +98,18 @@ def _call_later(callback, name, seconds):
 _call_later.timers = {}
 
 def set_sprinkler_on_duration(sprinkler_id, seconds):
-    session = db.Session()
-    sprinkler = db.get_sprinkler(session, sprinkler_id)
-    _set_sprinkler_state(session, sprinkler, True)
-    LOGGER.info("%s will go off in %d seconds", sprinkler, seconds)
-    callback = functools.partial(_go_off, sprinkler.id)
-    _call_later(callback, sprinkler.id, seconds)
-    session.close()
+    with db.session_scope() as session:
+        sprinkler = db.get_sprinkler(session, sprinkler_id)
+        _set_sprinkler_state(session, sprinkler, True)
+        LOGGER.info("%s will go off in %d seconds", sprinkler, seconds)
+        callback = functools.partial(_go_off, sprinkler.id)
+        _call_later(callback, sprinkler.id, seconds)
 
 def _go_off(sprinkler_id):
-    session = db.Session()
-    sprinkler = db.get_sprinkler(session, sprinkler_id)
-    LOGGER.debug("Setting %s off now", sprinkler)
-    _set_sprinkler_state(session, sprinkler, False)
-    session.close()
+    with db.session_scope() as session:
+        sprinkler = db.get_sprinkler(session, sprinkler_id)
+        LOGGER.debug("Setting %s off now", sprinkler)
+        _set_sprinkler_state(session, sprinkler, False)
 
 def _send_failure_email(sprinkler, attempts, direction):
     ses = boto.ses.connection.SESConnection()
