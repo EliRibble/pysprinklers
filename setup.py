@@ -20,6 +20,7 @@ def do_setup():
         packages            = ['pysprinklers'],
         package_data        = {'pysprinklers': files},
         scripts             = ['bin/sprinklerd', 'bin/sprinklerctl'],
+        data_files          = [('webserver', ['webserver/index.html'])],
         **extra
     )
 
