@@ -1,0 +1,17 @@
+<!doctype html>
+<html ng-app>
+<head>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
+  <script type="application/javascript">
+  function IndexController($scope) {
+    $scope.greeting = "Hello World";
+  }
+  </script>
+</head>
+<body>
+  <div ng-controller="IndexController">
+  <p>{{greeting}}</p>
+  </div>
+</body>
+</html>
