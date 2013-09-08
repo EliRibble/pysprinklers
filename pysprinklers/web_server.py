@@ -5,8 +5,9 @@ import platform
 
 server = flask.Flask(__name__)
 @server.route('/')
-def hello():
-    return "Hello"
+def root():
+    with open('webserver/index.html') as p:
+        return p.read()
 
 @server.route('/sprinklers/')
 def sprinklers():
